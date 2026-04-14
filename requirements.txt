@@ -9,7 +9,6 @@ pandas==3.0.2
 pillow==12.2.0
 pyparsing==3.3.2
 python-dateutil==2.9.0.post0
--e git+ssh://git@github.com/pfpimenta/rad_analysis_v2.git@5b62cb26dfa2cd542624f6b8c136e8baa96306ef#egg=rad_analysis_v2
 scipy==1.17.1
 seaborn==0.13.2
 six==1.17.0
