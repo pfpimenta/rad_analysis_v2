@@ -1,0 +1,14 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["src*"]
+
+[project]
+name = "rad_analysis_v2"
+version = "0.1.0"
+
+[tool.setuptools.dynamic]
+dependencies = {file = ["requirements.txt"]}
