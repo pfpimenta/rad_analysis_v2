@@ -66,6 +66,13 @@ Results are generated in `rad_analysis_v2/data/<experiment_name>/results/`:
 - **Plots:** Plot images are saved in the `plots/` subdirectory.
 
 
+## Repository Structure
+
+* `data` folder: where we keep all the data gathered from radiation experiments and fault injection experiments. It has its own README.md file explaining its structure in more detail.
+* `src` folder: Contains the core, reusable logic of the project (parsers, math, and plotting). This is installed as a local package (`rad_analysis`), allowing you to import functions consistently across any script or notebook.
+* `scripts` folder: Contains experiment-specific scripts (e.g., `2026_01_PARTREC_analysis.py`). These files are meant to be executed by the user to perform specific analyses using the tools provided in the `src` directory.
+
+
 ## TODOs
 
 * fix 2026_01_CNAO_analysis.py script: golden values are not matching with expected values from logs
