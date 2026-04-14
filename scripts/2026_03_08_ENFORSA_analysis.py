@@ -1,0 +1,135 @@
+# script to analyse the data from the RTL fault injection simulation ran on 08/03/2026
+
+import hashlib
+from typing import List
+
+import numpy as np
+import pandas as pd
+
+from src.experiment_paths import ExperimentPaths
+from src.geometric_distribution_analysis import geometric_distribution_analysis
+from src.goldens import load_golden_array
+from src.plot import generate_all_plots
+from src.sdc_processing import create_sdc_df
+
+EXPERIMENT_NAME = "2026_03_08_ENFORSA"
+CONV_20_NAME = "depthwise_conv_2d_1_1024_1024_3_20_20_3_1"
+CONV_40_NAME = "simple_conv_2d_1_1024_1024_1_40_40_1_1"
+
+
+def load_enforsa_goldens():
+    goldens = {}
+    goldens["conv20x20"] = load_golden_array(
+        experiment_name=EXPERIMENT_NAME, model_name=CONV_20_NAME
+    )[0]
+    goldens["conv40x40"] = load_golden_array(
+        experiment_name=EXPERIMENT_NAME, model_name=CONV_40_NAME
+    )[0]
+    return goldens
+
+
+def load_enforsa_output(fault_tag: int) -> np.ndarray:
+    """Output shape: (Batch, Width, Height, Depth)"""
+    enforsa_paths = ExperimentPaths(experiment_name=EXPERIMENT_NAME)
+    outputs_folderpath = enforsa_paths.experiment_folderpath / "conv_out_samples_rtl"
+    output_filepath = outputs_folderpath / f"fault_{fault_tag}.npy"
+    corrupted_output_array = np.load(output_filepath)
+    return corrupted_output_array
+
+
+def get_sdc_details(
+    fault_row: pd.Series,
+    corrupted_output_array: np.ndarray,
+    golden_output_array: np.ndarray,
+) -> List[dict]:
+    row_hash = hashlib.md5(str(fault_row).encode()).hexdigest()
+    sdc_id = f"{int(fault_row.fault_tag)}_conv40_{row_hash}"
+    fault_type = int(fault_row.target)
+    # 1. Find the indices where they differ
+    diff_indices = np.where(corrupted_output_array != golden_output_array)
+    # 2. Extract the values using those indices
+    expected_values = golden_output_array[diff_indices]
+    received_values = corrupted_output_array[diff_indices]
+    # get output shape
+    assert corrupted_output_array.shape == golden_output_array.shape
+    original_shape = golden_output_array.shape
+    sdc_details_list = []
+    for idx, exp, rec in zip(
+        np.transpose(diff_indices), expected_values, received_values
+    ):
+        original_indexes = tuple(int(i) for i in idx)
+        sdc_wrong_element_info = {
+            "filepath": None,
+            "log_start_timestamp": None,
+            "model_name": CONV_40_NAME,
+            "experiment_name": EXPERIMENT_NAME,
+            "device": "rasp4-coral",
+            "sdc_id": sdc_id,
+            "index": None,
+            "expected": int(exp),
+            "received": int(rec),
+            "image_index": 0,
+            "acc_time_at_sdc": None,
+            "diff": int(rec) - int(exp),
+            "original_indexes": original_indexes,
+            "fault_type": fault_type,
+            # "original_shape": original_shape,
+        }
+        sdc_details_list.append(sdc_wrong_element_info)
+    return sdc_details_list
+
+
+def analysis_2026_03_08_ENFORSA():
+
+    enforsa_paths = ExperimentPaths(experiment_name=EXPERIMENT_NAME)
+
+    ### load data
+    # load log CSV
+    log_csv_path = enforsa_paths.experiment_folderpath / "log_rtl.csv"
+    faults_df = pd.read_csv(log_csv_path, sep="\t", comment="#")
+    # load golden
+    goldens = load_enforsa_goldens()
+
+    ### create SDC details dataframe
+    sdc_faults_df = faults_df[faults_df["sdc"] == 1]
+    all_sdc_details_list = []
+    for idx, row in sdc_faults_df.iterrows():
+        # check if non-SDC outputs match goldens
+        corrupted_output_array = load_enforsa_output(row.fault_tag)
+        # conv40x40 == simple_conv1k == 2d 40x40 == simple_conv_2d_1_1024_1024_1_40_40_1_1
+        assert corrupted_output_array.shape == goldens["conv40x40"].shape
+        sdc_details_list = get_sdc_details(
+            row, corrupted_output_array, goldens["conv40x40"]
+        )
+        all_sdc_details_list += sdc_details_list
+    sdc_details_df = pd.DataFrame(all_sdc_details_list)
+    sdc_details_df_len = len(sdc_details_df)
+    print(f"--- Processed {len(sdc_details_df)} wrong elements ---")
+
+    # get geometric classification of SDCs (single, row, square)
+    sdc_geometric_dist_df = geometric_distribution_analysis(sdc_details_df)
+    sdc_geometric_dist_df = sdc_geometric_dist_df[
+        ["sdc_id", "original_indexes", "sdc_class", "original_shape"]
+    ]
+    sdc_details_df = sdc_details_df.merge(
+        sdc_geometric_dist_df, on=["sdc_id", "original_indexes"], how="left"
+    )
+    # be sure that there are not extra rows
+    assert len(sdc_details_df) == sdc_details_df_len
+
+    # create SDCs df
+    sdc_df = create_sdc_df(sdc_details_df, EXPERIMENT_NAME)
+
+    # save CSVs
+    sdc_details_df.to_csv(enforsa_paths.sdc_details_csv, index=False)
+    print(f"Saved {enforsa_paths.sdc_details_csv}")
+    sdc_df.to_csv(enforsa_paths.sdcs_csv, index=False)
+    print(f"Saved {enforsa_paths.sdcs_csv}")
+
+    # generate all plots
+    # TODO fix plots, ta meio bugado
+    generate_all_plots(experiment_name=EXPERIMENT_NAME)
+
+
+if __name__ == "__main__":
+    analysis_2026_03_08_ENFORSA()

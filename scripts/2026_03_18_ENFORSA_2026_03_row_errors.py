@@ -1,0 +1,5 @@
+from src.row_fault_model_analysis import row_fault_model_analysis
+
+EXPERIMENT_NAME = "2026_03_08_ENFORSA"
+
+row_fault_model_analysis(experiment_name=EXPERIMENT_NAME)
