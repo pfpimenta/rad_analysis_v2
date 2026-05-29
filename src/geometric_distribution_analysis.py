@@ -168,7 +168,7 @@ def geometric_distribution_analysis(sdc_details_df: pd.DataFrame) -> pd.DataFram
             # CNAO and PARTREC have different shape. CNAO is just bounding boxes, which is what Bruno's code actually uses
             or (
                 model_name == "ssd_mobilenetv2_coral"
-                and experiment_name == "CNAO_2026_01"
+                and experiment_name == "2026_01_CNAO"
             )
         ):
             # if skip, then fill in None values and etc

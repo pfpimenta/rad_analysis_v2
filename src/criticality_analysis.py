@@ -334,7 +334,7 @@ def criticality_analysis(
         # skip if it is this specific case
         if (
             model_name == "ssd_mobilenetv2_coral"
-            and sdc_experiment_name == "CNAO_2026_01"
+            and sdc_experiment_name == "2026_01_CNAO"
         ):
             # CNAO and PARTREC have different shape. CNAO is just bounding boxes, which is what Bruno's code actually uses
             continue

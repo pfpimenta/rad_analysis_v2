@@ -101,5 +101,5 @@ class ExperimentPaths:
 
 if __name__ == "__main__":
     # main only for debbuging
-    e = ExperimentPaths(experiment_name="CNAO_2026_01")
+    e = ExperimentPaths(experiment_name="2026_01_CNAO")
     breakpoint()

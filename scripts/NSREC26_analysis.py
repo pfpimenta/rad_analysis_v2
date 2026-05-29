@@ -9,8 +9,8 @@ from src.sdc_processing import create_sdc_df
 
 EXPERIMENT_NAME = "NSREC26"
 nsrec_paths = ExperimentPaths(experiment_name=EXPERIMENT_NAME)
-cnao_paths = ExperimentPaths(experiment_name="CNAO_2026_01")
-partrec_paths = ExperimentPaths(experiment_name="PARTREC_2026_01")
+cnao_paths = ExperimentPaths(experiment_name="2026_01_CNAO")
+partrec_paths = ExperimentPaths(experiment_name="2026_01_PARTREC")
 
 
 def print_sdc_stats_per_model(sdc_details_df: pd.DataFrame):

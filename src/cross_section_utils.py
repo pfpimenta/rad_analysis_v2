@@ -202,7 +202,7 @@ def create_cross_section_df(runs_df, logs_df) -> pd.DataFrame:
     cross_section_df["due_count"] = cross_section_df["num_logs"] - 1
     # compute fluency
     cross_section_df["fluency"] = (
-        cross_section_df["total_acc_time_sum"] / cross_section_df["flux"]
+        cross_section_df["total_acc_time_sum"] * cross_section_df["flux"]
     )
     # Handle cases where flux might be 0 to avoid Infinity values
     cross_section_df["fluency"] = cross_section_df["fluency"].replace(
