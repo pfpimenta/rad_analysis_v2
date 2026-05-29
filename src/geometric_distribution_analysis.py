@@ -10,7 +10,7 @@ from src.goldens import get_output_shape, load_golden_array
 
 
 # TODO get this from 1 single golden file
-def get_original_shapes(golden_paths):
+def get_original_shapes(golden_paths: dict) -> dict:
     original_shapes_dict = {}
     for key, path in golden_paths.items():
         try:
@@ -26,7 +26,7 @@ def get_original_shapes(golden_paths):
     return original_shapes_dict
 
 
-def get_nd_indices(row):
+def get_nd_indices(row: pd.Series) -> tuple:
     # unravel_index returns a tuple of coordinates
     # We convert it to a list or tuple to store it in a single cell
     try:
@@ -83,7 +83,7 @@ def classify_sdc_pattern(one_sdc_df: pd.DataFrame) -> str:
     return sdc_pattern
 
 
-def print_sdc_class_percentages(sdc_geometric_dist_df: pd.DataFrame):
+def print_sdc_class_percentages(sdc_geometric_dist_df: pd.DataFrame) -> None:
 
     # 0. keep only 1 row per SDC
     df = sdc_geometric_dist_df.drop_duplicates(subset=["sdc_id"])
@@ -124,10 +124,9 @@ def check_original_indexes(one_sdc_df: pd.DataFrame) -> bool:
             print(f"model {model_name}, original_indexes: {original_indexes}")
             print(f"DEBUG one_sdc_df: {one_sdc_df}")
             breakpoint()
-        # if golden_value != row["expected"] and row["model_name"] != "ssd_mobilenetv2_coral":
         if golden_value != row["expected"]:
             print(
-                f"Mismatch on {model_name} ...Real golden value: {golden_value}, but we have {row['expected']}"
+                f"Mismatch on {model_name} ...Real golden value: {golden_value}, but we have {row['expected']} at index: {original_indexes}"
             )
             all_index_match = False
             print(
@@ -139,7 +138,11 @@ def check_original_indexes(one_sdc_df: pd.DataFrame) -> bool:
 
 def geometric_distribution_analysis(sdc_details_df: pd.DataFrame) -> pd.DataFrame:
     """
-    TODO description
+    Classifies each SDC as "single", "row", "semi-row", or "square" based on the geometric distribution of the wrong elements in the output.
+    Single: only one wrong element in the output
+    Row: all wrong elements' positions are in a single column or row
+    Semi-row: >90% of wrong elements' positions are in a single column or row
+    Square: all other situations, as the wrong elements' positions can only be covered with a big rectangle or square
 
     Returns:
     sdc_geometric_dist_df: pd.DataFrame,
@@ -206,6 +209,7 @@ if __name__ == "__main__":
     # load SDC details df
     sdc_details_df = pd.read_csv(experiment_paths.sdc_details_csv)
 
+    # compute geometric distribution of SDCs
     sdc_geometric_dist_df = geometric_distribution_analysis(sdc_details_df)
 
     # save in an CSV
