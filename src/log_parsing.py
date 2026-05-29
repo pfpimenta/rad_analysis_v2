@@ -92,7 +92,7 @@ def extract_info_from_log_path(path_string: str) -> Tuple[pd.Timestamp, str, str
     """
     Returns timestamp, model_name, experiment_name, and device from a log filepath.
     Example input path_string:
-    /home/pfpimenta/rad_analysis/data/PARTREC_2026_01/logs/rasp4-coral/2026_01_21_23_44_01_run_ssd_mobilenetv2_coral_ECC_OFF_rasp4-coral.log
+    /home/pfpimenta/rad_analysis/data/2026_01_PARTREC/logs/rasp4-coral/2026_01_21_23_44_01_run_ssd_mobilenetv2_coral_ECC_OFF_rasp4-coral.log
     """
     path_obj = Path(path_string)
     filename = path_obj.name
@@ -106,14 +106,20 @@ def extract_info_from_log_path(path_string: str) -> Tuple[pd.Timestamp, str, str
     )
 
     # 2. Extract Model Name
+    # First try the format: ..._run_[model_name]_ECC_OFF...
     model_match = re.search(r"(?<=run_)(.*?)(?=_ECC_OFF)", filename)
+    if not model_match:
+        # Fallback: try extracting between timestamp and _ECC_OFF
+        # e.g., '2026_05_25_01_19_53_conv_2d_int8_k5x5x64_in256x256x64_ECC_OFF_rasp4-coral.log'
+        model_match = re.search(r"\d{4}_\d{2}_\d{2}_\d{2}_\d{2}_\d{2}_(.*?)(?=_ECC_OFF)", filename)
+    
     model_name = model_match.group(1) if model_match else None
 
     # 3. Extract experiment_name and Device via Path Hierarchy
     # Structure: [Experiment]/logs/[Device]/[File]
     try:
         device = path_obj.parent.name  # 'rasp4-coral'
-        experiment_name = path_obj.parents[2].name  # 'PARTREC_2026_01'
+        experiment_name = path_obj.parents[2].name  # '2026_01_PARTREC'
     except IndexError:
         device, experiment_name = None, None
 

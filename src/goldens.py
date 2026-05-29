@@ -85,6 +85,22 @@ GOLDEN_PATHS = {
         "depthwise_conv_2d_1_1024_1024_3_20_20_3_1": GOLDEN_FOLDER
         / "golden_depthwise_conv_2d_1_1024_1024_3_20_20_3_1.npy",
     },
+    "2026_05_CHIPIR": {
+        "conv_2d_int8_k3x3x64_in256x256x64": GOLDEN_FOLDER
+        / "golden_conv_2d_int8_k3x3x64_in256x256x64_edgetpu.npy",
+        "conv_2d_int8_k5x5x64_in256x256x64": GOLDEN_FOLDER
+        / "golden_conv_2d_int8_k5x5x64_in256x256x64_edgetpu.npy",
+        "conv_2d_int8_k16x16x64_in256x256x64": GOLDEN_FOLDER
+        / "golden_conv_2d_int8_k16x16x64_in256x256x64_edgetpu.npy",
+        "conv_2d_int8_k8x8x64_in256x256x64": GOLDEN_FOLDER
+        / "golden_conv_2d_int8_k8x8x64_in256x256x64_edgetpu.npy",
+        "conv_2d_uint8_k3x3x64_in256x256x64": GOLDEN_FOLDER
+        / "golden_conv_2d_uint8_k3x3x64_in256x256x64_edgetpu.npy",
+        "conv_2d_int8_k3x3x32_in256x256x32": GOLDEN_FOLDER
+        / "golden_conv_2d_int8_k3x3x32_in256x256x32_edgetpu.npy",
+        "depthwise_conv_2d_int8_k3x3x64_in256x256x64": GOLDEN_FOLDER
+        / "golden_depthwise_conv_2d_int8_k3x3x64_in256x256x64_edgetpu.npy"
+    },
 }
 
 

@@ -33,6 +33,13 @@ MODEL_COLORS = {
     "simple_conv1k": "#9b34db",  # simple_conv1k == 2d 40x40
     # SC26 conv aggregations
     "conv": "#344adb",
+    "conv_2d_int8_k3x3x64_in256x256x64": "#344adb",
+    "conv_2d_int8_k5x5x64_in256x256x64": "#344adb",
+    "conv_2d_int8_k16x16x64_in256x256x64": "#344adb",
+    "conv_2d_int8_k8x8x64_in256x256x64": "#344adb",
+    "conv_2d_uint8_k3x3x64_in256x256x64": "#344adb",
+    "conv_2d_int8_k3x3x32_in256x256x32": "#344adb",
+    "depthwise_conv_2d_int8_k3x3x64_in256x256x64": "#344adb"
 }
 
 
@@ -756,6 +763,9 @@ def plot_count_wrong_elements_distribution_per_fault_type(experiment_name: str):
         print("⚠️ Warning: no fault type information to be used for plots.")
         return None
     for fault_type in unique_fault_types:
+        if np.isnan(fault_type):
+            # skip NaN fault_type
+            continue
         subset = sdc_df[sdc_df["fault_type"] == fault_type]
         counts = subset["count_wrong_elements"]
 
