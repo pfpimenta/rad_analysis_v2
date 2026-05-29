@@ -20,21 +20,21 @@ This project provides tools to analyze radiation experiment data from CNAO and P
 
 1. Create and activate a virtual environment:
 ```bash
-   python3 -m venv venv_rad_analysis
-   source venv_rad_analysis/bin/activate
+python3 -m venv venv_rad_analysis
+source venv_rad_analysis/bin/activate
 ```
 
 2. Install dependencies.
 ```bash
-    pip install -r requirements.txt  # Installs Pandas, Numpy, etc.
-    pip install -e .                # Installs the local rad_analysis logic
+pip install -r requirements.txt  # Installs Pandas, Numpy, etc.
+pip install -e .                 # Installs the local rad_analysis logic
 ```
 
 ### How to update dependencies
 
 This command adds the dependencies to the requirements.txt file without the local rad_analysis dependency, which should not be there.
 ```bash
-   pip freeze | grep -v "rad_analysis" > requirements.txt
+pip freeze | grep -v "rad_analysis" > requirements.txt
 ```
 
 
@@ -42,7 +42,6 @@ This command adds the dependencies to the requirements.txt file without the loca
 
 Run the analysis for specific experiments by running its analysis script:
 ```bash
-# Analyze individual experiments
 python3 scripts/2026_01_PARTREC_analysis.py 
 ```
 
@@ -76,6 +75,10 @@ Results are generated in `rad_analysis_v2/data/<experiment_name>/results/`:
 ## TODOs
 
 * fix 2026_01_CNAO_analysis.py script: golden values are not matching with expected values from logs
+* Include Sample Data: Add a small "dummy" or anonymized dataset in a sample_data/ folder so users can run a test script immediately after installation.
+* Add Tests: Implement a few basic tests using pytest to verify that log_parsing.py and sdc_processing.py work as expected.
+* try to generalize analysis scripts: Instead of having 10+ separate scripts in the scripts/ folder, create a single entry point (e.g., rad-analysis --experiment 2026_01_PARTREC)
+* Validation Script: Add a script that checks if the data/ directory is set up correctly before running an analysis.
 * run_analysis.py script that can call each analysis just by changing a CLI parameter
 * print visualization of the a single SDC in the format of a PNG image
 * output a report.md (or PDF) with a human readable summary of the analysis
