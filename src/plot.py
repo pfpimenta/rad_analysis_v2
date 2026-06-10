@@ -117,7 +117,11 @@ def plot_histogram_comparisons_num_corrupted_elements(experiment_name: str):
         plt.xticks(fontsize=TICK_SIZE)
         plt.yticks(fontsize=TICK_SIZE)
 
-        plt.legend(loc="upper right", fontsize=LABEL_SIZE + 3)
+        # Only show legend if there are labels to show
+        handles, labels = plt.gca().get_legend_handles_labels()
+        if labels:
+            plt.legend(handles, labels, loc="upper right", fontsize=LABEL_SIZE + 3)
+
         plt.grid(axis="y", linestyle="--", alpha=0.5)
         plt.tight_layout()
 

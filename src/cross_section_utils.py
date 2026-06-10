@@ -16,9 +16,9 @@ def merge_runs_df_and_logs_df(
 ) -> pd.DataFrame:
     """
     Merges runs_df and logs_df, finding which log files correspond to each
-    esperiment run.
-    The output dataframe contains one row for each run, like runs_df,
-    but with these new columns:
+    experiment run.
+    If a run contains multiple models, the output will have one row per (run, model) pair.
+    The output dataframe contains columns from runs_df plus:
     'sdc_count', 'model_name', 'num_logs', and 'total_acc_time_sum'.
     """
     # 1. Format timestamps
@@ -33,30 +33,15 @@ def merge_runs_df_and_logs_df(
         logs_df["log_start_timestamp"], format=date_format
     )
 
-    # 2. STEP 1: Find the "Official Model" for each run
-    # We sort for merge_asof and find the log closest to the START of the run
-    runs_sorted = runs_df.sort_values("start_timestamp")
-    logs_sorted = logs_df.sort_values("log_start_timestamp")
-
-    model_mapping = pd.merge_asof(
-        runs_sorted[["run_id", "start_timestamp"]],
-        logs_sorted[["log_start_timestamp", "model_name"]],
-        left_on="start_timestamp",
-        right_on="log_start_timestamp",
-        direction="nearest",
-    )[["run_id", "model_name"]].rename(columns={"model_name": "official_model"})
-
-    # 3. Merge this official name back to our main runs list
-    runs_df = pd.merge(runs_df, model_mapping, on="run_id", how="left")
-
-    # 4. STEP 2: Gather all logs that match both the TIME and the MODEL
-    # Estimate log end for a better time window
+    # 2. Prepare logs with end timestamps
     logs_df["log_end_timestamp"] = logs_df["log_start_timestamp"] + pd.to_timedelta(
         logs_df["last_acc_time"].fillna(0), unit="s"
     )
 
+    # 3. Perform a cross merge to find all possible matches
+    # We only need the columns necessary for matching and aggregation
     combined = pd.merge(
-        runs_df[["run_id", "start_timestamp", "end_timestamp", "official_model"]],
+        runs_df[["run_id", "start_timestamp", "end_timestamp"]],
         logs_df[
             [
                 "log_start_timestamp",
@@ -69,19 +54,17 @@ def merge_runs_df_and_logs_df(
         how="cross",
     )
 
-    # STRICT MASK: Time must overlap AND model_name must match official_model
+    # 4. Filter logs that fall within the run time window
     buffer = pd.Timedelta(seconds=10)
     mask = (
-        (combined["model_name"] == combined["official_model"])
-        & (combined["log_start_timestamp"] <= (combined["end_timestamp"] + buffer))
+        (combined["log_start_timestamp"] <= (combined["end_timestamp"] + buffer))
         & (combined["log_end_timestamp"] >= (combined["start_timestamp"] - buffer))
     )
-
     matches = combined[mask]
 
-    # 5. Aggregate
+    # 5. Aggregate metrics per (run_id, model_name)
     summary = (
-        matches.groupby("run_id")
+        matches.groupby(["run_id", "model_name"])
         .agg(
             total_acc_time_sum=("last_acc_time", "sum"),
             sdc_count=("sdc_count", "sum"),
@@ -90,20 +73,20 @@ def merge_runs_df_and_logs_df(
         .reset_index()
     )
 
-    # 6. Final Join
+    # 6. Final Join with runs_df to regain metadata (flux, etc.)
+    # We use 'left' to keep track of runs with no matches
     new_runs_df = pd.merge(runs_df, summary, on="run_id", how="left")
 
     # Cleaning up
     new_runs_df["num_logs"] = new_runs_df["num_logs"].fillna(0)
     new_runs_df["total_acc_time_sum"] = new_runs_df["total_acc_time_sum"].fillna(0)
     new_runs_df["sdc_count"] = new_runs_df["sdc_count"].fillna(0)
-    new_runs_df = new_runs_df.rename(columns={"official_model": "model_name"})
 
-    # Check if we still have any runs with 0 logs (indicates a match failure)
+    # Check for missing logs
     missing_logs = new_runs_df[new_runs_df["num_logs"] == 0]
     if not missing_logs.empty:
         print(
-            f"⚠️ Warning: No logs found for Run IDs: {missing_logs['run_id'].tolist()}"
+            f"⚠️ Warning: No logs found for Run IDs: {missing_logs['run_id'].unique().tolist()}"
         )
 
     return new_runs_df

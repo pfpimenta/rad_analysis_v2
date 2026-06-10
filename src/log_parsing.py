@@ -16,6 +16,7 @@ def filter_crazy_sdcs(sdc_details: List[List[dict]]) -> Tuple[int, List[List[dic
     MAX_VALUE_ERRORS_PER_SDC = 500
     # 1. Filter out SDCs that exceed the error threshold
     # We use a list comprehension to avoid mutation issues during iteration
+    initial_sdc_count = len(sdc_details)
     filtered_details = [
         sdc for sdc in sdc_details if len(sdc) <= MAX_VALUE_ERRORS_PER_SDC
     ]
@@ -32,6 +33,9 @@ def filter_crazy_sdcs(sdc_details: List[List[dict]]) -> Tuple[int, List[List[dic
             seen_signatures.add(signature)
     # Update count based on the final cleaned list
     new_sdc_count = len(unique_sdcs)
+    filtered_out_count = initial_sdc_count - new_sdc_count
+    if filtered_out_count > 0:
+        print(f"Filtered out {filtered_out_count} crazy SDCs.")
     return new_sdc_count, unique_sdcs
 
 
