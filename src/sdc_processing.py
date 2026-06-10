@@ -60,8 +60,8 @@ def create_sdc_df(
             max_expected=("expected", "max"),
             # 4. Stats for difference values
             mean_diff=("diff", "mean"),
-            min_diff=("diff", "min"),
-            max_diff=("diff", "max"),
+            min_diff=("diff", lambda x: x.abs().min()),
+            max_diff=("diff", lambda x: x.abs().max()),
         )
         .reset_index()
     )
