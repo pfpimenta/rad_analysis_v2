@@ -2,6 +2,9 @@
 based on the radiation experiment data and analysis (SDCs, cross-sections, etc) data.
 """
 
+import ast
+import sys
+
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -81,6 +84,16 @@ def plot_histogram_comparisons_num_corrupted_elements(experiment_name: str):
             "colors": ["#8534db", "#ffdb65"],
         },
     ]
+    # Filter comparisons: only keep those where at least one model exists in the data
+    available_models = set(sdc_df["model_name"].unique())
+    comparisons = [
+        comp
+        for comp in comparisons
+        if any(label in available_models for label in comp["labels"])
+    ]
+
+    if not comparisons:
+        return
 
     metric_column = "count_wrong_elements"
 
@@ -415,7 +428,7 @@ def plot_sdc_criticality_comparisons(experiment_name: str):
     sdc_df = sdc_df.dropna(subset=["is_critical"])
     sdc_df["is_critical"] = sdc_df["is_critical"].astype(bool)
 
-    # TODO refactor dps: final_golden_score
+    # get final_golden_score (Model Confidence)
     col1 = "golden_conf"
     col2 = "mean_golden_score_on_critical_errors"
     # Get the columns if they exist, otherwise use a Series of NaNs
@@ -891,6 +904,65 @@ def print_general_SDC_stats(sdc_details_df: pd.DataFrame, sdc_df: pd.DataFrame):
         print("diff (numerical delta):      Column not found in sdc_details_df")
 
 
+def plot_row_error_dimensions(experiment_name: str):
+    """
+    Plots a pie chart showing the distribution of the spreading dimension
+    for SDCs classified as 'row'.
+    """
+    experiment_paths = ExperimentPaths(experiment_name=experiment_name)
+    sdc_df = pd.read_csv(experiment_paths.sdcs_csv)
+    sdc_details_df = pd.read_csv(experiment_paths.sdc_details_csv)
+
+    # Filter for row errors
+    row_sdcs = sdc_df[sdc_df["sdc_class"] == "row"]
+    if row_sdcs.empty:
+        return
+
+    # Merge to get original_indexes
+    row_details = pd.merge(
+        row_sdcs[["sdc_id"]],
+        sdc_details_df[["sdc_id", "original_indexes"]],
+        on="sdc_id",
+        how="left",
+    )
+
+    def get_spread_dim(group):
+        indices = [
+            ast.literal_eval(i) if isinstance(i, str) else i for i in group
+        ]
+        if len(indices) < 2:
+            return np.nan
+        arr = np.array(indices)
+        spans = arr.max(axis=0) - arr.min(axis=0)
+        return np.argmax(spans)
+
+    spread_dims = row_details.groupby("sdc_id")["original_indexes"].apply(get_spread_dim)
+
+    dim_map = {1: "Height", 2: "Width", 3: "Channel", 0: "Batch"}
+    counts = spread_dims.map(dim_map).value_counts()
+
+    if counts.empty:
+        return
+
+    plt.figure(figsize=(8, 8))
+    plt.pie(
+        counts,
+        labels=counts.index,
+        autopct=lambda pct: f"{pct:.1f}%\n({int(round(pct*sum(counts)/100))})",
+        startangle=140,
+        colors=sns.color_palette("pastel"),
+    )
+    plt.title(f"Row Error Spreading Dimension\nExperiment: {experiment_name}")
+
+    plot_path = (
+        experiment_paths.plots_folderpath / f"{experiment_name}_row_error_dimensions.png"
+    )
+    plt.tight_layout()
+    plt.savefig(plot_path, dpi=300)
+    plt.close()
+    print(f"Saved {plot_path}")
+
+
 def generate_fault_simulation_plots(experiment_name: str) -> None:
     experiment_paths = ExperimentPaths(experiment_name=experiment_name)
     sdc_df = pd.read_csv(experiment_paths.sdcs_csv)
@@ -936,9 +1008,12 @@ def generate_all_plots(experiment_name: str):
     plot_sdc_class_for_each_model(experiment_name)
     generate_SDC_criticality_plots(experiment_name)
     plot_histogram_num_corrupted_elements_per_SDC_object_detection(experiment_name)
-    # TODO plot row errors stuff: % of each dimension
+    plot_row_error_dimensions(experiment_name)
 
 
 if __name__ == "__main__":
-    experiment_name = None  # TODO get from parameters
-    generate_all_plots(experiment_name)
+    if len(sys.argv) > 1:
+        experiment_name = sys.argv[1]
+        generate_all_plots(experiment_name)
+    else:
+        print("Usage: python3 -m src.plot <experiment_name>")

@@ -13,6 +13,7 @@ import pandas as pd
 import seaborn as sns
 
 from src.experiment_paths import ExperimentPaths
+from src.plot import plot_row_error_dimensions
 
 
 def is_contiguous(group_df):
@@ -438,6 +439,9 @@ def row_fault_model_analysis(experiment_name: str):
         xlabel="amount of wrong elements per SDC",
         color="darkorange",
     )
+
+    # plot plot_row_error_dimensions
+    plot_row_error_dimensions(experiment_name)
 
     # print mode, mean, and std  of count_wrong_elements
     print(f"count_wrong_elements mode: {row_sdc_df['count_wrong_elements'].mode()[0]}")
