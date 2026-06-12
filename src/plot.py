@@ -43,7 +43,7 @@ MODEL_COLORS = {
     "conv_2d_int8_k8x8x64_in256x256x64": "#344adb",
     "conv_2d_uint8_k3x3x64_in256x256x64": "#344adb",
     "conv_2d_int8_k3x3x32_in256x256x32": "#344adb",
-    "depthwise_conv_2d_int8_k3x3x64_in256x256x64": "#344adb"
+    "depthwise_conv_2d_int8_k3x3x64_in256x256x64": "#344adb",
 }
 
 
@@ -928,16 +928,16 @@ def plot_row_error_dimensions(experiment_name: str):
     )
 
     def get_spread_dim(group):
-        indices = [
-            ast.literal_eval(i) if isinstance(i, str) else i for i in group
-        ]
+        indices = [ast.literal_eval(i) if isinstance(i, str) else i for i in group]
         if len(indices) < 2:
             return np.nan
         arr = np.array(indices)
         spans = arr.max(axis=0) - arr.min(axis=0)
         return np.argmax(spans)
 
-    spread_dims = row_details.groupby("sdc_id")["original_indexes"].apply(get_spread_dim)
+    spread_dims = row_details.groupby("sdc_id")["original_indexes"].apply(
+        get_spread_dim
+    )
 
     dim_map = {1: "Height", 2: "Width", 3: "Channel", 0: "Batch"}
     counts = spread_dims.map(dim_map).value_counts()
@@ -956,26 +956,28 @@ def plot_row_error_dimensions(experiment_name: str):
     plt.title(f"Row Error Spreading Dimension\nExperiment: {experiment_name}")
 
     plot_path = (
-        experiment_paths.plots_folderpath / f"{experiment_name}_row_error_dimensions.png"
+        experiment_paths.plots_folderpath
+        / f"{experiment_name}_row_error_dimensions.png"
     )
     plt.tight_layout()
     plt.savefig(plot_path, dpi=300)
     plt.close()
     print(f"Saved {plot_path}")
 
+
 def plot_golden_matrix_distribution(golden_file_path: str):
     # Load the golden data
     data = np.load(golden_file_path)
-    
+
     # Plot the distribution of values in the matrix
     plt.figure(figsize=(10, 6))
-    plt.hist(data.flatten(), bins=256, color='skyblue', edgecolor='black', alpha=0.7)
+    plt.hist(data.flatten(), bins=256, color="skyblue", edgecolor="black", alpha=0.7)
     golden_filename = Path(golden_file_path).stem
-    plt.title(f'Distribution of Values:\n{golden_filename}')
-    plt.xlabel('Value')
-    plt.ylabel('Frequency')
+    plt.title(f"Distribution of Values:\n{golden_filename}")
+    plt.xlabel("Value")
+    plt.ylabel("Frequency")
     plt.grid(True)
-    
+
     experiment_paths = ExperimentPaths(experiment_name="goldens_analysis")
     plot_path = (
         experiment_paths.plots_folderpath / f"{golden_filename}_value_distribution.png"
