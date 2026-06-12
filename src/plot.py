@@ -4,6 +4,7 @@ based on the radiation experiment data and analysis (SDCs, cross-sections, etc) 
 
 import ast
 import sys
+from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -956,6 +957,28 @@ def plot_row_error_dimensions(experiment_name: str):
 
     plot_path = (
         experiment_paths.plots_folderpath / f"{experiment_name}_row_error_dimensions.png"
+    )
+    plt.tight_layout()
+    plt.savefig(plot_path, dpi=300)
+    plt.close()
+    print(f"Saved {plot_path}")
+
+def plot_golden_matrix_distribution(golden_file_path: str):
+    # Load the golden data
+    data = np.load(golden_file_path)
+    
+    # Plot the distribution of values in the matrix
+    plt.figure(figsize=(10, 6))
+    plt.hist(data.flatten(), bins=256, color='skyblue', edgecolor='black', alpha=0.7)
+    golden_filename = Path(golden_file_path).stem
+    plt.title(f'Distribution of Values:\n{golden_filename}')
+    plt.xlabel('Value')
+    plt.ylabel('Frequency')
+    plt.grid(True)
+    
+    experiment_paths = ExperimentPaths(experiment_name="goldens_analysis")
+    plot_path = (
+        experiment_paths.plots_folderpath / f"{golden_filename}_value_distribution.png"
     )
     plt.tight_layout()
     plt.savefig(plot_path, dpi=300)
