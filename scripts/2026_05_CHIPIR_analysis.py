@@ -35,11 +35,15 @@ def plot_sdc_cross_section_per_model(
     x = np.arange(len(df))
     y = df["SDC_cross_section"]
     # yerr must be a 2xN array for lower and upper error bars
-    yerr = np.array([(y - df["sdc_cs_low"]).values, (df["sdc_cs_high"] - y).values])
+    # new error bar using stdev:
+    yerr = np.array([(df["stdev_for_error_bar"]).values, (df["stdev_for_error_bar"]).values])
+    # breakpoint()
+    # old error bar using chi squared:
+    # yerr = np.array([(y - df["sdc_cs_low"]).values, (df["sdc_cs_high"] - y).values])
 
     plt.bar(x, y, yerr=yerr, capsize=5, color="skyblue", edgecolor="black", alpha=0.8)
 
-    plt.xticks(x, df["model_name"], rotation=45, ha="right")
+    plt.xticks(x, df["model_name"])
     plt.ylabel("SDC Cross Section (cm²)")
     plt.title(f"SDC Cross Section: {comparison_name}\nExperiment: {experiment_name}")
     plt.yscale("log")
@@ -73,11 +77,12 @@ def plot_avg_error_delta_per_model(
         y="mean_diff",
         hue="model_name",
         palette="viridis",
-        errorbar=("ci", 95),
+        errorbar="se",
         legend=False,
+        dodge=False,
     )
 
-    plt.xticks(rotation=45, ha="right")
+    plt.xticks()
     plt.ylabel("Average Error Delta (mean_diff)")
     plt.title(f"Average Error Delta: {comparison_name}\nExperiment: {experiment_name}")
     plt.grid(axis="y", linestyle="--", alpha=0.7)
@@ -110,11 +115,12 @@ def plot_avg_wrong_element_count_per_model(
         y="count_wrong_elements",
         hue="model_name",
         palette="magma",
-        errorbar=("ci", 95),
+        errorbar="se",
         legend=False,
+        dodge=False,
     )
 
-    plt.xticks(rotation=45, ha="right")
+    plt.xticks()
     plt.ylabel("Average Corrupted Elements per SDC")
     plt.title(
         f"Average Corrupted Elements: {comparison_name}\nExperiment: {experiment_name}"
@@ -136,7 +142,7 @@ def generate_conv_comparison_plots(experiment_name: str):
     plots comparing metrics:
     [SDC cross section, avg_error_delta, avg_wrong_element_count]
     for each comparison:
-    [kernel size, int8 x uint8, standard2d x depthwise]
+    [kernel size, int8 x uint8, standard2d x depthwise]
     """
     kernel_size_comparison_models = [
         "conv_2d_int8_k3x3x64_in256x256x64",
@@ -166,53 +172,57 @@ def generate_conv_comparison_plots(experiment_name: str):
         )
 
 
-def chipir_2026_05_analysis():
-    """
-    ### runs_df
-    # load runs CSV
-    runs_df = pd.read_csv(chipir_paths.runs_info_csv)
+def chipir_2026_05_analysis(only_plots: bool = False):
+    if not only_plots:
+        ### runs_df
+        # load runs CSV
+        runs_df = pd.read_csv(chipir_paths.runs_info_csv)
 
-    ### logs_df
-    logs_df = create_logs_df(experiment_name=EXPERIMENT_NAME)
+        ### logs_df
+        logs_df = create_logs_df(experiment_name=EXPERIMENT_NAME)
 
-    # create SDCs dataframe
-    sdc_details_df = create_sdc_details_df(logs_df=logs_df)
-    sdc_details_df.to_csv(
-        chipir_paths.sdc_details_csv, index=False, sep=",", encoding="utf-8"
-    )
-    print(f"Saved {chipir_paths.sdc_details_csv}")
+        # create SDCs dataframe
+        sdc_details_df = create_sdc_details_df(logs_df=logs_df)
+        sdc_details_df.to_csv(
+            chipir_paths.sdc_details_csv, index=False, sep=",", encoding="utf-8"
+        )
+        print(f"Saved {chipir_paths.sdc_details_csv}")
 
-    # create sdc_df
-    sdc_df = create_sdc_df(sdc_details_df, EXPERIMENT_NAME)
-    sdc_df.to_csv(chipir_paths.sdcs_csv, index=False, sep=",", encoding="utf-8")
-    print(f"Saved {chipir_paths.sdcs_csv}")
+        # create sdc_df
+        sdc_df = create_sdc_df(sdc_details_df, EXPERIMENT_NAME)
+        sdc_df.to_csv(chipir_paths.sdcs_csv, index=False, sep=",", encoding="utf-8")
+        print(f"Saved {chipir_paths.sdcs_csv}")
 
-    ### now using both runs_df and logs_df:
-    cross_section_df = create_cross_section_df(runs_df, logs_df)
-    # save cross sections per run into CSV
-    cross_section_df.to_csv(
-        chipir_paths.cross_sections_per_run_csv, index=False, sep=",", encoding="utf-8"
-    )
-    print(f"Saved {chipir_paths.cross_sections_per_run_csv}")
+        ### now using both runs_df and logs_df:
+        cross_section_df = create_cross_section_df(runs_df, logs_df)
+        # save cross sections per run into CSV
+        cross_section_df.to_csv(
+            chipir_paths.cross_sections_per_run_csv, index=False, sep=",", encoding="utf-8"
+        )
+        print(f"Saved {chipir_paths.cross_sections_per_run_csv}")
 
-    # compute cross sections per model
-    cross_section_per_model_df = aggregate_per_model(cross_section_df)
-    # save cross sections per model
-    cross_section_per_model_df.to_csv(
-        chipir_paths.cross_sections_per_model_csv,
-        index=False,
-        sep=",",
-        encoding="utf-8",
-    )
-    print(f"Saved {chipir_paths.cross_sections_per_model_csv}")
+        # compute cross sections per model
+        cross_section_per_model_df = aggregate_per_model(cross_section_df)
+        # save cross sections per model
+        cross_section_per_model_df.to_csv(
+            chipir_paths.cross_sections_per_model_csv,
+            index=False,
+            sep=",",
+            encoding="utf-8",
+        )
+        print(f"Saved {chipir_paths.cross_sections_per_model_csv}")
 
     # generate and save all plots
     generate_all_plots(EXPERIMENT_NAME)
-    """
 
     # conv comparison plots
     generate_conv_comparison_plots(EXPERIMENT_NAME)
 
 
 if __name__ == "__main__":
-    chipir_2026_05_analysis()
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--only-plots", action="store_true", help="Skip data processing and only run plotting"
+    )
+    args = parser.parse_args()
+    chipir_2026_05_analysis(only_plots=args.only_plots)
