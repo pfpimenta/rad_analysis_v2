@@ -6,6 +6,7 @@ aggregate event counts (Single Event Upsets - SDCs and Device Under Test Errors 
 and compute cross-sections with associated confidence intervals using Chi-squared statistics.
 """
 
+import math
 import numpy as np
 import pandas as pd
 from scipy.stats import chi2
@@ -91,6 +92,16 @@ def merge_runs_df_and_logs_df(
 
     return new_runs_df
 
+def add_stdev_for_error_bar(df: pd.DataFrame) -> pd.DataFrame:
+    """ Adds a 'stdev_for_error_bar' column to the dataframe for both SDC and DUE metrics
+     using the formula used in Bruno's code:
+     stdev = (2 * sqrt(events)) / fluence
+    """
+    fluency_col = "total_fluency"
+    for metric in ["sdc", "due"]:
+        count_col = f"total_{metric}"
+        df["stdev_for_error_bar"] = (2 * np.sqrt(df[count_col])) / df[fluency_col]
+    return df
 
 def add_cross_section_bounds(df, alpha=0.15):
     """
@@ -169,6 +180,7 @@ def aggregate_per_model(cross_section_df: pd.DataFrame) -> pd.DataFrame:
 
     # compute lower and upper bound for cross sections
     model_summary = add_cross_section_bounds(model_summary)
+    model_summary = add_stdev_for_error_bar(model_summary)
 
     return model_summary
 
