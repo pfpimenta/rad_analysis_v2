@@ -98,6 +98,12 @@ class ExperimentPaths:
         # CSV file containing 1 row per each wrong/corrupted element of a SDC (many rows per SDC)
         return self.results_folderpath / f"{self.experiment_name}_SDC_details.csv"
 
+    @cached_property
+    def sdc_criticality_per_box_csv(self) -> Path:
+        # CSV file containing 1 row per each box of each SDC,
+        # with information about the criticality of this box (has_critical_box_error, confidence_score_diff, etc)
+        return self.results_folderpath / f"{self.experiment_name}_sdc_criticality_per_box.csv"
+
 
 if __name__ == "__main__":
     # main only for debbuging

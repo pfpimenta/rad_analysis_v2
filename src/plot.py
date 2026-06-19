@@ -96,8 +96,6 @@ def plot_histogram_comparisons_num_corrupted_elements(experiment_name: str):
     if not comparisons:
         return
 
-    metric_column = "count_wrong_elements"
-
     for comp in comparisons:
         plt.figure(figsize=(10, 6))
 
@@ -105,6 +103,13 @@ def plot_histogram_comparisons_num_corrupted_elements(experiment_name: str):
             comp["labels"], comp["colors"], comp["label_name"]
         ):
             subset_df = sdc_df[sdc_df["model_name"] == model_name]
+
+            if model_name == "ssd_mobilenetv2_coral":
+                # For the Object Detection model, use the 'od_count_wrong_elements' column
+                metric_column = "od_count_wrong_elements"
+            else:
+                # For other models, use the 'count_wrong_elements' column
+                metric_column = "count_wrong_elements"
 
             if not subset_df.empty:
                 # 'common_norm=False' + 'stat="percent"' ensures each distribution
@@ -187,6 +192,53 @@ def plot_histogram_num_corrupted_elements_all_convs(experiment_name: str):
         plt.close()
         print(f"Saved {agg_path}")
 
+def plot_OD_histogram_num_corrupoted_elements_per_SDC(experiment_name: str):
+    """Saves PNG with plot of histogram of amount of corrupted elements per SDC,
+    considering only the Object Detection models.
+    """
+    model_name = "ssd_mobilenetv2_coral"
+    experiment_paths = ExperimentPaths(experiment_name=experiment_name)
+    plots_folder = experiment_paths.plots_folderpath
+    sdc_criticality_per_box_df = pd.read_csv(experiment_paths.sdc_criticality_per_box_csv)
+
+    # filter out rows with confidence_score_diff == 0
+    sdc_criticality_per_box_df = sdc_criticality_per_box_df[
+        sdc_criticality_per_box_df["confidence_score_diff"] != 0
+    ]
+    n_points = len(sdc_criticality_per_box_df)
+    if n_points == 0:
+        return
+    
+    # Weights for 0-100% normalization
+    weights = np.ones(n_points) * 100.0 / n_points
+
+    ### --- PLOT 1: ONLY DIFF ---
+    plt.figure(figsize=(12, 6))
+    # Use 300 bins for high granularity
+    color = MODEL_COLORS[model_name]
+    counts, bins, _ = plt.hist(
+        sdc_criticality_per_box_df['confidence_score_diff'],
+        bins=300,
+        weights=weights,
+        alpha=0.7,
+        edgecolor="black",
+        color=color,
+    )
+
+    # Adjust Y-axis to 110% of the highest bin
+    plt.ylim(0, counts.max() * 1.1)
+    plt.xlabel("Difference (corrupted - expected)", fontsize=LABEL_SIZE)
+    plt.ylabel("Frequency (%)", fontsize=LABEL_SIZE)
+    plt.tick_params(axis="both", which="major", labelsize=TICK_SIZE)
+    plt.grid(True, alpha=0.3)
+
+    output_path = (
+        f"{plots_folder}/{experiment_name}_{model_name}_SDC_delta_distribution.png"
+    )
+    plt.savefig(output_path, dpi=300, bbox_inches="tight")
+    plt.close()
+    print(f"Saved {output_path}")
+
 
 def plots_histogram_expected_vs_corrupted_output_values(experiment_name: str):
     """Saves PNGs with plots of, for each model,
@@ -211,6 +263,10 @@ def plots_histogram_expected_vs_corrupted_output_values(experiment_name: str):
         plt.figure(figsize=(12, 6))
         # Use 300 bins for high granularity
         color = MODEL_COLORS[model_name]
+        if model_name == "ssd_mobilenetv2_coral":
+            # get from sdc_criticality_per_box.csv
+            plot_OD_histogram_num_corrupoted_elements_per_SDC(experiment_name)
+            continue
         counts, bins, _ = plt.hist(
             model_sdcs_df["diff"],
             bins=300,
@@ -232,7 +288,7 @@ def plots_histogram_expected_vs_corrupted_output_values(experiment_name: str):
         plt.grid(True, alpha=0.3)
 
         output_path = (
-            f"{plots_folder}/{experiment_name}_{model_name}_SDC_distribution.png"
+            f"{plots_folder}/{experiment_name}_{model_name}_SDC_delta_distribution.png"
         )
         plt.savefig(output_path, dpi=300, bbox_inches="tight")
         plt.close()

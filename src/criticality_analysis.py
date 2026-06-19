@@ -382,11 +382,8 @@ def criticality_analysis(
     od_criticality_per_box_df = pd.DataFrame(rows)
     # save CSV
     experiment_paths = ExperimentPaths(experiment_name)
-    output_csv_filepath = (
-        experiment_paths.results_folderpath / "sdc_criticality_per_box.csv"
-    )
-    od_criticality_per_box_df.to_csv(output_csv_filepath, index=False)
-    print(f"Saved {output_csv_filepath}")
+    od_criticality_per_box_df.to_csv(experiment_paths.sdc_criticality_per_box_csv, index=False)
+    print(f"Saved {experiment_paths.sdc_criticality_per_box_csv}")
 
     od_sdc_criticality_df = build_sdc_criticality_df(od_sdc_criticality_dict)
     ic_sdc_criticality_df = build_sdc_criticality_df(ic_sdc_criticality_dict)
